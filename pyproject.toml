@@ -1,0 +1,47 @@
+[project]
+name = "kepler"
+version = "0.1.0"
+description = "Film an experiment, find the physical law, predict what happens next."
+readme = "README.md"
+authors = [
+    { name = "Yanis Djeridi" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.5.4",
+    "openai>=3.42.1",
+    "opencv-python-headless>=5.0.0.93",
+    "scipy>=1.18.1",
+]
+
+[project.scripts]
+kepler = "kepler.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+[tool.ruff]
+line-length = 120
+extend-exclude = ["mutants"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RET", "PIE", "ERA", "C90", "PL", "RUF"]
+ignore = ["PLR2004", "PLR0913"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
