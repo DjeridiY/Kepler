@@ -6,13 +6,18 @@ a box prompt on frame 0 then tracks reliably.
 
 import base64
 import re
+import subprocess
+import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol, cast
 
 import cv2
 import numpy as np
 from openai import OpenAI
+
+from kepler import video
 
 IMAGE_COST = 0.0025
 VIDEO_FRAME_COST = 0.0002
@@ -93,6 +98,17 @@ def detect(transport: Transport, image_bgr: np.ndarray, prompt: str) -> list[Box
     return sorted(boxes.values(), key=lambda b: b.area, reverse=True)
 
 
+def constant_rate_copy(path: str, dst: str, fps: int = 60) -> int:
+    """Re-encode `path` into `dst`, each decoded frame becoming one frame timed k / fps; return the frame count."""
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", path, "-map", "0:v:0", "-vf", f"setpts=N/({fps}*TB)"]
+    cmd += ["-r", str(fps), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "10", dst]
+    subprocess.run(cmd, check=True)
+    copied, source = len(video.frame_times(dst)), len(video.frame_times(path))
+    if copied != source:
+        raise SamError(f"constant-rate copy has {copied} frames, source has {source}")
+    return copied
+
+
 def track(
     transport: Transport,
     path: str,
@@ -107,7 +123,11 @@ def track(
     if not boxes:
         raise SamError(f"object not found on frame 0: {prompt}")
     height, width = frame0_bgr.shape[:2]
-    text, n_frames = transport.segment_video(path, box_prompt(boxes[0], width, height))
+    # On a variable-rate upload SAM drops frames and its indices drift from the decoded ones.
+    with tempfile.TemporaryDirectory() as tmp:
+        copy = str(Path(tmp) / "cfr.mp4")
+        constant_rate_copy(path, copy)
+        text, n_frames = transport.segment_video(copy, box_prompt(boxes[0], width, height))
     if on_cost:
         on_cost("sam_video", max(n_frames, VIDEO_MIN_FRAMES) * VIDEO_FRAME_COST)
     found = sorted((i, objs[1]) for i, objs in parse_records(text).items() if 1 in objs)

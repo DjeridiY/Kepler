@@ -1,8 +1,11 @@
 import importlib.metadata
+from pathlib import Path
 
+import cv2
 import numpy as np
 import pytest
 
+from kepler import sam, synth, video
 from kepler.sam import Box, SamError, box_prompt, parse_records, track
 
 REAL = (
@@ -62,6 +65,68 @@ class FakeTransport:
 FRAME0 = np.zeros((48, 64, 3), np.uint8)
 
 
+@pytest.fixture(scope="module")
+def vfr_clip(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("clip") / "vfr.mp4")
+    synth.render_pendulum(path, vfr=True, duration_s=4.0)
+    return path
+
+
+def assert_constant_rate_copy_of(dst: str, src: str) -> None:
+    n = len(video.frame_times(src))
+    times = video.frame_times(dst)
+    assert len(times) == n
+    np.testing.assert_allclose(times, np.arange(n) / 60, atol=1e-3)
+    assert not video.is_vfr(dst)
+    for a, b in zip(video.read_frames(src), video.read_frames(dst), strict=True):
+        assert cv2.PSNR(a.image, b.image) >= 40
+
+
+def test_constant_rate_copy_keeps_every_frame_at_fixed_rate(vfr_clip: str, tmp_path: Path) -> None:
+    assert video.is_vfr(vfr_clip)
+    before = Path(vfr_clip).read_bytes()
+    dst = str(tmp_path / "cfr.mp4")
+    assert sam.constant_rate_copy(vfr_clip, dst) == len(video.frame_times(vfr_clip))
+    assert_constant_rate_copy_of(dst, vfr_clip)
+    assert Path(vfr_clip).read_bytes() == before
+
+
+class RecordingTransport(FakeTransport):
+    def __init__(self, src: str, fail: bool = False) -> None:
+        super().__init__("<0f>1<|box;x1=10;y1=20;x2=20;y2=30;w=64;h=48|>")
+        self.src, self.fail, self.paths = src, fail, []
+
+    def segment_video(self, path: str, prompt: str) -> tuple[str, int]:
+        self.paths.append(path)
+        assert path != self.src
+        assert_constant_rate_copy_of(path, self.src)
+        if self.fail:
+            raise RuntimeError("upload failed")
+        return super().segment_video(path, prompt)
+
+
+def test_track_sends_a_temporary_constant_rate_copy(vfr_clip: str) -> None:
+    fake = RecordingTransport(vfr_clip)
+    track(fake, vfr_clip, "red ball", frame0_bgr=FRAME0)
+    assert len(fake.paths) == 1
+    assert not Path(fake.paths[0]).exists()
+
+
+def test_track_removes_the_copy_when_the_transport_fails(vfr_clip: str) -> None:
+    fake = RecordingTransport(vfr_clip, fail=True)
+    with pytest.raises(RuntimeError, match="upload failed"):
+        track(fake, vfr_clip, "red ball", frame0_bgr=FRAME0)
+    assert len(fake.paths) == 1
+    assert not Path(fake.paths[0]).exists()
+
+
+@pytest.fixture
+def small_clip_in_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    synth.render_pendulum("v.mp4", duration_s=0.5, size=(64, 48))
+
+
+@pytest.mark.usefixtures("small_clip_in_cwd")
 def test_track_uses_detected_box_as_video_prompt() -> None:
     fake = FakeTransport("<0f>0<|box;x1=1;y1=1;x2=3;y2=3;w=64;h=48|>,1<|box;x1=10;y1=20;x2=20;y2=30;w=64;h=48;c=0.8|>")
     costs: list[tuple[str, float]] = []

@@ -40,7 +40,8 @@ class FakeTransport:
         return _box(x, y, self.radius, 0, 0)
 
     def segment_video(self, path: str, prompt: str) -> tuple[str, int]:
-        bobs = self.truths[path]["bob_px"]
+        # SAM receives a constant-rate copy, not the clip itself: answer for the clip whose frame 0 was just detected
+        bobs = self.current["bob_px"]
         return "\n".join(_box(x, y, self.radius, i, 1) for i, (x, y) in enumerate(bobs)), len(bobs)
 
 
