@@ -67,7 +67,7 @@ make check   # ruff, pyright, pytest (offline: fake clients and synthetic videos
 
 ## Credits
 
-Music in the demo video: "Soaring" Kevin MacLeod (incompetech.com)
+Music in the demo video: "Stay the Course" Kevin MacLeod (incompetech.com)
 Licensed under Creative Commons: By Attribution 4.0
 https://creativecommons.org/licenses/by/4.0/
 
