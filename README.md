@@ -21,6 +21,14 @@ This is a proof of concept built in a few days for the Meta Global AI Developer 
 
 ## Results (real clips, filmed at home)
 
+| Check | Kepler | Reference | Gap |
+|---|---|---|---|
+| Pendulum length, from the A4 sheet | 22.0 cm | 22.2 cm (tape) | −0.9 % |
+| Pendulum, 7.6 s it never saw | predicted path | SAM 3.1 track | 3.5 mm mean, 7.3 mm max |
+| Cup landing spot, sealed before the throw | 39.8 cm | basket placed at 39.8 cm | ball in the basket |
+| Cup, two practice rolls | 40.2 / 39.3 cm | each other | 0.9 cm |
+| Short-string bet | 0.610 s | 0.6295 s (measured) | +3.2 % (released at 57°, not 30°) |
+
 **Pendulum.** 12 laws competed: 6 from the library, 6 written by Muse Spark over 2 rounds. The winner was Muse Spark's *pendulum with viscous quadratic and dry friction*, at 1.20 % error on unseen data. The best built-in law (*damped pendulum, linear*) scored 1.48 %. Kepler predicted 7.6 s of motion it never saw. The predicted bob stayed 3.5 mm from the real one on average, 7.3 mm at worst.
 
 ![Prediction vs reality on the pendulum](docs/pend_split.png)
