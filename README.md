@@ -1,4 +1,6 @@
-# Kepler: an AI scientist that doesn't guess
+# Kepler
+
+**An AI scientist that doesn't guess.**
 
 Film an experiment with your phone. Kepler watches it (SAM 3.1), writes its own laws of physics as code (Muse Spark), tests them on frames it never saw, and bets on the future.
 
@@ -6,9 +8,9 @@ Film an experiment with your phone. Kepler watches it (SAM 3.1), writes its own 
 
 *39.8 cm, sealed at 19:12:29. The ball was thrown at 19:19:56. It landed in the basket.*
 
-Demo video: <YOUTUBE_LINK>
+**[▶ Watch the 2-minute demo](https://www.youtube.com/watch?v=eiH3mqjKnnc)**
 
-This is a proof of concept built in a few days for the Meta Global AI Developer Hackathon (Indie track).
+This is a proof of concept built in 5 days for the Meta Global AI Developer Hackathon (Indie track).
 
 ## How it works
 
